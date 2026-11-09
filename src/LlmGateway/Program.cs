@@ -14,20 +14,24 @@ builder.Services.AddHttpClient("openai", client =>
 
 var app = builder.Build();
 
-app.MapPost("/v1/chat/completions", async (HttpRequest request, IHttpClientFactory factory) =>
+app.MapPost("/v1/chat/completions", async (HttpContext context, IHttpClientFactory factory) =>
 {
     var client = factory.CreateClient("openai");
 
     using var upstreamRequest = new HttpRequestMessage(HttpMethod.Post, "v1/chat/completions")
     {
-        Content = new StreamContent(request.Body)
+        Content = new StreamContent(context.Request.Body)
     };
     upstreamRequest.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
 
-    using var upstreamResponse = await client.SendAsync(upstreamRequest);
-    var body = await upstreamResponse.Content.ReadAsStringAsync();
+    using var upstreamResponse = await client.SendAsync(
+        upstreamRequest, HttpCompletionOption.ResponseHeadersRead, context.RequestAborted);
 
-    return Results.Content(body, "application/json", statusCode: (int)upstreamResponse.StatusCode);
+    context.Response.StatusCode = (int)upstreamResponse.StatusCode;
+    context.Response.ContentType = upstreamResponse.Content.Headers.ContentType?.ToString();
+
+    await using var upstreamStream = await upstreamResponse.Content.ReadAsStreamAsync(context.RequestAborted);
+    await upstreamStream.CopyToAsync(context.Response.Body, context.RequestAborted);
 });
 
 app.Run();
