@@ -1,0 +1,7 @@
+{
+  "model": "gpt-4o-mini",
+  "stream": true,
+  "messages": [
+    { "role": "user", "content": "1den 5e say" }
+  ]
+}

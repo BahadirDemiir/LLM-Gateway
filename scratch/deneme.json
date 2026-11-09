@@ -1,0 +1,6 @@
+{
+  "model": "gpt-yok",
+  "messages": [
+    { "role": "user", "content": "Merhaba de" }
+  ]
+}
